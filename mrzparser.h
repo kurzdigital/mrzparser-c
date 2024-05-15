@@ -43,6 +43,7 @@ char *stpncpy(char *dst, const char *src, size_t len) {
 #define MRZ_NUMBERS_AND_FILLER MRZ_NUMBERS MRZ_FILLER
 #define MRZ_CAPACITY(s) (sizeof(s) - 1)
 #define MRZ_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define MRZ_FILLER_SEPARATOR "<<"
 #define MRZ_DOCUMENT_CODE "document code"
 #define MRZ_ISSUING_STATE "issuing state"
 #define MRZ_DOCUMENT_NUMBER "document number"
@@ -71,6 +72,9 @@ char *stpncpy(char *dst, const char *src, size_t len) {
 #define MRZ_CSUM_DOE "checksum for date of expiry"
 #define MRZ_CSUM_PERSONAL_NUMBER "checksum for personal number"
 #define MRZ_CSUM_COMBINED "combined checksum"
+#define MRZ_SWISS_LANGUAGE "invalid language code"
+#define MRZ_SWISS_VERSION "invalid version"
+#define MRZ_SWISS_FILLER "invalid filler characters"
 #define MRZ_ASSERT_CSUM(x, m, e) if (!x && !m->error) { m->error = e; }
 
 static int mrz_parser_check_digit_weights[] = {7, 3, 1};
@@ -154,7 +158,7 @@ static void mrz_parser_strrep(char *s, char find, char replacement) {
 }
 
 static void mrz_parser_parse_identifiers(MRZ *mrz, const char *identifiers) {
-	const char *p = strstr(identifiers, "<<");
+	const char *p = strstr(identifiers, MRZ_FILLER_SEPARATOR);
 	size_t cap = MRZ_CAPACITY(mrz->primary_identifier);
 	size_t len = p - identifiers;
 	if (p && len < cap) {
@@ -528,7 +532,8 @@ static int mrz_parser_parse_mrva(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
 			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
-	success &= mrz_parser_parse(&s, MRZ_CAPACITY(mrz->nationality), mrz->nationality,
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
 			MRZ_NATIONALITY, e);
 	success &= mrz_parser_parse(&s,
@@ -781,6 +786,105 @@ static int mrz_parser_parse_france(MRZ *mrz, const char *s) {
 	return success;
 }
 
+static int mrz_parser_parse_dl_swiss(MRZ *mrz, const char *s) {
+	// Switzerland has something like an MRZ on its driver licenses:
+	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
+	mrz->error = NULL;
+	const char **e = &mrz->error;
+	int success = 1;
+
+	// First line.
+	char raw_card_number_alnum[4];
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(raw_card_number_alnum), raw_card_number_alnum,
+			3, MRZ_CHARACTERS_AND_NUMBERS,
+			MRZ_DOCUMENT_CODE, e);
+	char raw_card_number_num[4];
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(raw_card_number_num), raw_card_number_num,
+			3, MRZ_NUMBERS,
+			MRZ_DOCUMENT_CODE, e);
+	char lang[2];
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(lang), lang,
+			1, MRZ_CHARACTERS,
+			MRZ_DOCUMENT_CODE, e);
+	if (!strchr("DFIR", *lang)) {
+		*e = MRZ_SWISS_LANGUAGE;
+		success = 0;
+	}
+	char fillers[7];
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(fillers), fillers,
+			2, MRZ_FILLER,
+			MRZ_DOCUMENT_CODE, e);
+
+	// Second line.
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
+			2, MRZ_ALL,
+			MRZ_DOCUMENT_CODE, e);
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
+			3, "CHE",
+			MRZ_ISSUING_STATE, e);
+	if (strncmp("CHE", mrz->issuing_state, 3)) {
+		*e = MRZ_ISSUING_STATE;
+		success = 0;
+	}
+
+	// Calculate length of document number and version.
+	const char *p = strstr(s, MRZ_FILLER_SEPARATOR);
+	if (!p) {
+		*e = MRZ_DOCUMENT_NUMBER;
+		return 0;
+	}
+	int dnlen = p - s;
+	int remaining;
+	if (dnlen == 12) {
+		dnlen = 9;
+		remaining = 5;
+	} else if (dnlen == 15) {
+		dnlen = 12;
+		remaining = 2;
+	} else {
+		*e = MRZ_DOCUMENT_NUMBER;
+		return 0;
+	}
+
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
+			dnlen, MRZ_ALL,
+			MRZ_DOCUMENT_NUMBER, e);
+	char version[4];
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(version), version,
+			3, MRZ_NUMBERS,
+			MRZ_SWISS_VERSION, e);
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(fillers), fillers,
+			2, MRZ_FILLER,
+			MRZ_SWISS_FILLER, e);
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
+			6, MRZ_NUMBERS_AND_FILLER,
+			MRZ_DATE_OF_BIRTH, e);
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(fillers), fillers,
+			remaining, MRZ_FILLER,
+			MRZ_SWISS_FILLER, e);
+
+	// Third line.
+	char identifiers[31] = {0};
+	success &= mrz_parser_parse(&s,
+			MRZ_CAPACITY(identifiers), identifiers,
+			30, MRZ_CHARACTERS_AND_FILLER,
+			MRZ_IDENTIFIERS, e);
+	mrz_parser_parse_identifiers(mrz, identifiers);
+
+	return success;
+}
+
 static char *mrz_parser_purify(char *dst, const char *src, size_t len) {
 	const char *end = dst + len;
 	while (dst < end) {
@@ -814,6 +918,9 @@ int mrz_parse(MRZ *mrz, const char *s) {
 	switch (strlen(pure)) {
 		case 90:
 			result = mrz_parser_parse_td1(mrz, pure);
+			break;
+		case 69:
+			result = mrz_parser_parse_dl_swiss(mrz, pure);
 			break;
 		case 72:
 			result = !strncmp(pure, "IDFRA", 5)
