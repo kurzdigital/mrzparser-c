@@ -651,7 +651,7 @@ int mrz_parse(MRZ *mrz, const char *s) {
 			result = mrz_parser_parse_td1(mrz, pure);
 			break;
 		case 72:
-			result = !strncmp(s, "IDFRA", 5)
+			result = !strncmp(pure, "IDFRA", 5)
 				? mrz_parser_parse_france(mrz, pure)
 				: is_visa
 				? mrz_parser_parse_mrvb(mrz, pure)
