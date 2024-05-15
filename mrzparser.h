@@ -786,38 +786,41 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 	return success;
 }
 
-static int mrz_parse_dl_swiss(MRZ *mrz, const char *s) {
+static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
+		int ignore_first_line) {
 	// Switzerland has something like an MRZ on its driver licenses:
 	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
 	mrz->error = NULL;
 	const char **e = &mrz->error;
 	int success = 1;
 
-	// First line.
-	char raw_card_number_alnum[4];
-	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(raw_card_number_alnum), raw_card_number_alnum,
-			3, MRZ_CHARACTERS_AND_NUMBERS,
-			MRZ_DOCUMENT_CODE, e);
-	char raw_card_number_num[4];
-	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(raw_card_number_num), raw_card_number_num,
-			3, MRZ_NUMBERS,
-			MRZ_DOCUMENT_CODE, e);
-	char lang[2];
-	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(lang), lang,
-			1, MRZ_CHARACTERS,
-			MRZ_DOCUMENT_CODE, e);
-	if (!strchr("DFIR", *lang)) {
-		*e = MRZ_SWISS_LANGUAGE;
-		success = 0;
-	}
+	// First line, which is much shorter and contains just meta data.
 	char fillers[7];
-	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(fillers), fillers,
-			2, MRZ_FILLER,
-			MRZ_DOCUMENT_CODE, e);
+	if (!ignore_first_line) {
+		char raw_card_number_alnum[4];
+		success &= mrz_parse_component(&s,
+				MRZ_CAPACITY(raw_card_number_alnum), raw_card_number_alnum,
+				3, MRZ_CHARACTERS_AND_NUMBERS,
+				MRZ_DOCUMENT_CODE, e);
+		char raw_card_number_num[4];
+		success &= mrz_parse_component(&s,
+				MRZ_CAPACITY(raw_card_number_num), raw_card_number_num,
+				3, MRZ_NUMBERS,
+				MRZ_DOCUMENT_CODE, e);
+		char lang[2];
+		success &= mrz_parse_component(&s,
+				MRZ_CAPACITY(lang), lang,
+				1, MRZ_CHARACTERS,
+				MRZ_DOCUMENT_CODE, e);
+		if (!strchr("DFIR", *lang)) {
+			*e = MRZ_SWISS_LANGUAGE;
+			success = 0;
+		}
+		success &= mrz_parse_component(&s,
+				MRZ_CAPACITY(fillers), fillers,
+				2, MRZ_FILLER,
+				MRZ_DOCUMENT_CODE, e);
+	}
 
 	// Second line.
 	success &= mrz_parse_component(&s,
@@ -833,7 +836,8 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s) {
 		success = 0;
 	}
 
-	// Calculate length of document number and version.
+	// Calculate length of document number. Unfortunately, there are
+	// (at least) two versions with a different length.
 	const char *p = strstr(s, MRZ_FILLER_SEPARATOR);
 	if (!p) {
 		*e = MRZ_DOCUMENT_NUMBER;
@@ -919,8 +923,11 @@ int parse_mrz(MRZ *mrz, const char *s) {
 		case 90:
 			result = mrz_parse_td1(mrz, pure);
 			break;
+		case 60:
+			result = mrz_parse_dl_swiss(mrz, pure, 1);
+			break;
 		case 69:
-			result = mrz_parse_dl_swiss(mrz, pure);
+			result = mrz_parse_dl_swiss(mrz, pure, 0);
 			break;
 		case 72:
 			result = !strncmp(pure, "IDFRA", 5)
