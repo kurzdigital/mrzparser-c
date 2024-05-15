@@ -1,7 +1,8 @@
 # MRZ Parser for C/C++
 
 Single-file header library to parse a [Machine Readable Zone][mrz]
-(Type 1, 2 and 3, [MRV][mrv] A and B, and France ID).
+(Type 1, 2 and 3, [MRV][mrv] A and B, [France ID][france] and
+[Swiss driver license][swiss]).
 
 ## How to use
 
@@ -33,3 +34,5 @@ of an error.
 
 [mrz]: https://en.wikipedia.org/wiki/Machine-readable_passport
 [mrv]: https://en.wikipedia.org/wiki/Machine-readable_passport#Machine-readable_visas
+[france]: https://en.wikipedia.org/wiki/National_identity_card_(France)
+[swiss]: https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
