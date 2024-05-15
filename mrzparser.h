@@ -112,7 +112,7 @@ static int mrz_parser_check_extended(const char *digit, const char *s,
 	if (*digit == '<') {
 		const char *p = strchr(ext, '<');
 		size_t len = p - ext;
-		if (len > 1) {
+		if (p && len > 1) {
 			char d[2] = {ext[--len], 0};
 			// Unfortunately, Note j in ICAO 9303p5 doesn't specify
 			// if the `<` shall be part of the checksum calculation
