@@ -15,7 +15,7 @@ struct MRZ {
 };
 typedef struct MRZ MRZ;
 
-int mrz_parse(struct MRZ *, const char *);
+int parse_mrz(struct MRZ *, const char *);
 
 #ifdef MRZ_PARSER_IMPLEMENTATION
 #include <stdarg.h>
@@ -904,7 +904,7 @@ static char *mrz_parser_purify(char *dst, const char *src, size_t len) {
 	return dst;
 }
 
-int mrz_parse(MRZ *mrz, const char *s) {
+int parse_mrz(MRZ *mrz, const char *s) {
 	if (!mrz || !s) {
 		return 0;
 	}

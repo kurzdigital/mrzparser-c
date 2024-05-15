@@ -7,7 +7,7 @@ int main(void) {
 	MRZ mrz;
 	char line[1024];
 	while (fgets(line, sizeof(line), stdin)) {
-		if (!mrz_parse(&mrz, line)) {
+		if (!parse_mrz(&mrz, line)) {
 			fprintf(stderr, "FAILED:\n%s\nERROR: %s\n", line, mrz.error);
 			return -1;
 		}
