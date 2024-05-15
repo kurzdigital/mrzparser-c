@@ -121,7 +121,7 @@ static int mrz_parser_check_extended(const char *digit, const char *s,
 			char with[91] = {0};
 			size_t cap_w = MRZ_CAPACITY(with);
 			strncat(with, s, cap_w);
-			strncat(with, "<", cap_w - strlen(with));
+			strncat(with, MRZ_FILLER, cap_w - strlen(with));
 			if (cap_w - strlen(with) < len) {
 				return 0;
 			}
