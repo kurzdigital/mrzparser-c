@@ -18,7 +18,6 @@ Then invoke `parse_mrz()` with a MRZ (the string may contain white space
 and/or line breaks):
 
 	MRZ mrz;
-	char line[1024];
 	if (!parse_mrz(&mrz, "I<UTOERIKSSON<<ANNA<MARIA<<<<…")) {
 		fprintf(stderr, "error: %s\n", mrz.error);
 	}
