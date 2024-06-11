@@ -194,8 +194,6 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 	int success = 1;
 
 	// First line.
-	char document_number_check_digit[2] = {0};
-	char optional_data1[16] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
@@ -208,10 +206,12 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
 			MRZ_DOCUMENT_NUMBER, e);
+	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
 			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+	char optional_data1[16] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(optional_data1), optional_data1,
 			15, MRZ_ALL,
