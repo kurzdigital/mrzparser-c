@@ -23,16 +23,6 @@ int parse_mrz(struct MRZ *, const char *);
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef stpncpy
-char *stpncpy(char *dst, const char *src, size_t len) {
-	size_t l = strlen(src);
-	if (l > len) {
-		l = len;
-	}
-	return strncpy(dst, src, len) + l;
-}
-#endif
-
 #define MRZ_CHARACTERS "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define MRZ_NUMBERS "0123456789"
 #define MRZ_FILLER "<"
@@ -163,12 +153,12 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 	size_t len = p - identifiers;
 	if (p && len < cap) {
 		cap = len;
-		*stpncpy(mrz->secondary_identifier, p + 2,
-				MRZ_CAPACITY(mrz->secondary_identifier)) = 0;
+		strncpy(mrz->secondary_identifier, p + 2,
+				MRZ_CAPACITY(mrz->secondary_identifier));
 		mrz_strrep(mrz->secondary_identifier, '<', ' ');
 		mrz_rtrim(mrz->secondary_identifier);
 	}
-	*stpncpy(mrz->primary_identifier, identifiers, cap) = 0;
+	strncpy(mrz->primary_identifier, identifiers, cap);
 	mrz_strrep(mrz->primary_identifier, '<', ' ');
 	mrz_rtrim(mrz->primary_identifier);
 }
@@ -184,14 +174,16 @@ static int mrz_parse_component(const char **src, size_t size, char *field,
 		if (!*error) {
 			*error = description;
 		}
+		// Check premature end of input.
 		if (strlen(*src) < len) {
 			// Move to the end of the string to make sure all
 			// subsequent calls to mrz_parse_component() will fail, too.
 			for (; **src; ++*src);
 			return 0;
 		}
+		// Otherwise take malformed component and keep parsing.
 	}
-	*stpncpy(field, *src, len) = 0;
+	strncpy(field, *src, len);
 	*src += len;
 	return invalid ^ 1;
 }
@@ -891,17 +883,17 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 
 static char *mrz_purify(char *dst, const char *src, size_t len) {
 	const char *end = dst + len;
-	while (dst < end) {
+	while (dst <= end) {
 		src += strcspn(src, MRZ_ALL);
 		size_t sl = strspn(src, MRZ_ALL);
 		if (sl < 1) {
 			break;
 		}
-		char *n = dst + sl;
-		if (n > end) {
+		if (dst + sl > end) {
 			return NULL;
 		}
-		dst = stpncpy(dst, src, sl);
+		strncpy(dst, src, sl);
+		dst += sl;
 		src += sl;
 	}
 	*dst = 0;
