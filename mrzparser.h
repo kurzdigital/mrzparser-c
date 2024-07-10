@@ -34,6 +34,7 @@ int parse_mrz(struct MRZ *, const char *);
 #define MRZ_CAPACITY(s) (sizeof(s) - 1)
 #define MRZ_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define MRZ_FILLER_SEPARATOR "<<"
+#define MRZ_WHITE_SPACE " "
 #define MRZ_DOCUMENT_CODE "document code"
 #define MRZ_ISSUING_STATE "issuing state"
 #define MRZ_DOCUMENT_NUMBER "document number"
@@ -134,10 +135,10 @@ static int mrz_check_extended(const char *digit, const char *s,
 	return mrz_check(digit, s, NULL);
 }
 
-static void mrz_rtrim(char *s) {
-	char *end = s + strlen(s);
-	for (; end > s && *(end - 1) == ' '; --end);
-	*end = 0;
+static void mrz_rtrim(char *s, const char *chars) {
+	char *r = s + strlen(s);
+	for (; r > s && strchr(chars, *(r - 1)); --r);
+	*r = 0;
 }
 
 static void mrz_strrep(char *s, char find, char replacement) {
@@ -155,12 +156,12 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 		cap = len;
 		strncpy(mrz->secondary_identifier, p + 2,
 				MRZ_CAPACITY(mrz->secondary_identifier));
-		mrz_strrep(mrz->secondary_identifier, '<', ' ');
-		mrz_rtrim(mrz->secondary_identifier);
+		mrz_strrep(mrz->secondary_identifier, '<', *MRZ_WHITE_SPACE);
+		mrz_rtrim(mrz->secondary_identifier, MRZ_WHITE_SPACE);
 	}
 	strncpy(mrz->primary_identifier, identifiers, cap);
-	mrz_strrep(mrz->primary_identifier, '<', ' ');
-	mrz_rtrim(mrz->primary_identifier);
+	mrz_strrep(mrz->primary_identifier, '<', *MRZ_WHITE_SPACE);
+	mrz_rtrim(mrz->primary_identifier, MRZ_WHITE_SPACE);
 }
 
 static int mrz_parse_component(const char **src, size_t size, char *field,
@@ -772,8 +773,8 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 
 	// Trim identifiers as we do this with other MRZs too. This cannot
 	// be done before calculating the combined checksum, of course.
-	mrz_rtrim(mrz->primary_identifier);
-	mrz_rtrim(mrz->secondary_identifier);
+	mrz_rtrim(mrz->primary_identifier, MRZ_FILLER);
+	mrz_rtrim(mrz->secondary_identifier, MRZ_FILLER);
 
 	return success;
 }
@@ -937,12 +938,12 @@ int parse_mrz(MRZ *mrz, const char *s) {
 			return 0;
 	}
 	// Trim fillers.
-	strtok(mrz->document_code, MRZ_FILLER);
-	strtok(mrz->issuing_state, MRZ_FILLER);
-	strtok(mrz->nationality, MRZ_FILLER);
-	strtok(mrz->document_number, MRZ_FILLER);
-	strtok(mrz->date_of_birth, MRZ_FILLER);
-	strtok(mrz->date_of_expiry, MRZ_FILLER);
+	mrz_rtrim(mrz->document_code, MRZ_FILLER);
+	mrz_rtrim(mrz->issuing_state, MRZ_FILLER);
+	mrz_rtrim(mrz->nationality, MRZ_FILLER);
+	mrz_rtrim(mrz->document_number, MRZ_FILLER);
+	mrz_rtrim(mrz->date_of_birth, MRZ_FILLER);
+	mrz_rtrim(mrz->date_of_expiry, MRZ_FILLER);
 	return result;
 }
 #endif // MRZ_PARSER_IMPLEMENTATION
