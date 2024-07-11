@@ -144,10 +144,10 @@ static void mrz_rtrim(char *s, const char *chars) {
 	*r = 0;
 }
 
-static void mrz_strrep(char *s, char find, char replacement) {
+static void mrz_replace_fillers(char *s) {
 	char *p = s;
-	while ((p = strchr(p, find))) {
-		*p = replacement;
+	while ((p = strchr(p, *MRZ_FILLER))) {
+		*p = *MRZ_WHITE_SPACE;
 	}
 }
 
@@ -159,11 +159,11 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 		cap = len;
 		strncpy(mrz->secondary_identifier, p + 2,
 				MRZ_CAPACITY(mrz->secondary_identifier));
-		mrz_strrep(mrz->secondary_identifier, *MRZ_FILLER, *MRZ_WHITE_SPACE);
+		mrz_replace_fillers(mrz->secondary_identifier);
 		mrz_rtrim(mrz->secondary_identifier, MRZ_WHITE_SPACE);
 	}
 	strncpy(mrz->primary_identifier, identifiers, cap);
-	mrz_strrep(mrz->primary_identifier, *MRZ_FILLER, *MRZ_WHITE_SPACE);
+	mrz_replace_fillers(mrz->primary_identifier);
 	mrz_rtrim(mrz->primary_identifier, MRZ_WHITE_SPACE);
 }
 
@@ -948,13 +948,13 @@ int parse_mrz(MRZ *mrz, const char *s) {
 	mrz_rtrim(mrz->date_of_birth, MRZ_FILLER);
 	mrz_rtrim(mrz->date_of_expiry, MRZ_FILLER);
 	// Replace fillers with white space.
-	mrz_strrep(mrz->document_code, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->issuing_state, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->nationality, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->document_number, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->date_of_birth, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->sex, *MRZ_FILLER, *MRZ_WHITE_SPACE);
-	mrz_strrep(mrz->date_of_expiry, *MRZ_FILLER, *MRZ_WHITE_SPACE);
+	mrz_replace_fillers(mrz->document_code);
+	mrz_replace_fillers(mrz->issuing_state);
+	mrz_replace_fillers(mrz->nationality);
+	mrz_replace_fillers(mrz->document_number);
+	mrz_replace_fillers(mrz->date_of_birth);
+	mrz_replace_fillers(mrz->sex);
+	mrz_replace_fillers(mrz->date_of_expiry);
 	return result;
 }
 #endif // MRZ_PARSER_IMPLEMENTATION
