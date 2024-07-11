@@ -138,9 +138,9 @@ static int mrz_check_extended(const char *digit, char *dn, const char *ext) {
 	return mrz_check(digit, dn, NULL);
 }
 
-static void mrz_rtrim(char *s, const char *chars) {
+static void mrz_trim_fillers(char *s) {
 	char *r = s + strlen(s);
-	for (; r > s && strchr(chars, *(r - 1)); --r);
+	for (; r > s && *(r - 1) == *MRZ_FILLER; --r);
 	*r = 0;
 }
 
@@ -159,12 +159,12 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 		cap = len;
 		strncpy(mrz->secondary_identifier, p + 2,
 				MRZ_CAPACITY(mrz->secondary_identifier));
+		mrz_trim_fillers(mrz->secondary_identifier);
 		mrz_replace_fillers(mrz->secondary_identifier);
-		mrz_rtrim(mrz->secondary_identifier, MRZ_WHITE_SPACE);
 	}
 	strncpy(mrz->primary_identifier, identifiers, cap);
+	mrz_trim_fillers(mrz->primary_identifier);
 	mrz_replace_fillers(mrz->primary_identifier);
-	mrz_rtrim(mrz->primary_identifier, MRZ_WHITE_SPACE);
 }
 
 static int mrz_parse_component(const char **src, size_t size, char *field,
@@ -776,8 +776,8 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 
 	// Trim identifiers as we do this with other MRZs too. This cannot
 	// be done before calculating the combined checksum, of course.
-	mrz_rtrim(mrz->primary_identifier, MRZ_FILLER);
-	mrz_rtrim(mrz->secondary_identifier, MRZ_FILLER);
+	mrz_trim_fillers(mrz->primary_identifier);
+	mrz_trim_fillers(mrz->secondary_identifier);
 
 	return success;
 }
@@ -941,12 +941,12 @@ int parse_mrz(MRZ *mrz, const char *s) {
 			return 0;
 	}
 	// Trim fillers.
-	mrz_rtrim(mrz->document_code, MRZ_FILLER);
-	mrz_rtrim(mrz->issuing_state, MRZ_FILLER);
-	mrz_rtrim(mrz->nationality, MRZ_FILLER);
-	mrz_rtrim(mrz->document_number, MRZ_FILLER);
-	mrz_rtrim(mrz->date_of_birth, MRZ_FILLER);
-	mrz_rtrim(mrz->date_of_expiry, MRZ_FILLER);
+	mrz_trim_fillers(mrz->document_code);
+	mrz_trim_fillers(mrz->issuing_state);
+	mrz_trim_fillers(mrz->nationality);
+	mrz_trim_fillers(mrz->document_number);
+	mrz_trim_fillers(mrz->date_of_birth);
+	mrz_trim_fillers(mrz->date_of_expiry);
 	// Replace fillers with white space.
 	mrz_replace_fillers(mrz->document_code);
 	mrz_replace_fillers(mrz->issuing_state);
