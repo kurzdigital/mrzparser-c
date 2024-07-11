@@ -102,8 +102,7 @@ static int mrz_check(const char *digit, ...) {
 	return sum == (*digit == '<' ? 0 : *digit - 48);
 }
 
-static int mrz_check_extended(const char *digit, const char *s,
-		const char *ext) {
+static int mrz_check_extended(const char *digit, char *dn, const char *ext) {
 	if (*digit == '<') {
 		const char *p = strchr(ext, '<');
 		size_t len = p - ext;
@@ -115,7 +114,7 @@ static int mrz_check_extended(const char *digit, const char *s,
 			// other don't so we need to accept both variants.
 			char with[91] = {0};
 			size_t cap_w = MRZ_CAPACITY(with);
-			strncat(with, s, cap_w);
+			strncat(with, dn, cap_w);
 			strncat(with, MRZ_FILLER, cap_w - strlen(with));
 			if (cap_w - strlen(with) < len) {
 				return 0;
@@ -123,16 +122,20 @@ static int mrz_check_extended(const char *digit, const char *s,
 			strncat(with, ext, len);
 			char without[91] = {0};
 			size_t cap_wo = MRZ_CAPACITY(without);
-			strncat(without, s, cap_wo);
+			strncat(without, dn, cap_wo);
 			if (cap_wo - strlen(without) < len) {
 				return 0;
 			}
 			strncat(without, ext, len);
-			return mrz_check(d, with, NULL) ||
-					mrz_check(d, without, NULL);
+			if (mrz_check(d, with, NULL) ||
+					mrz_check(d, without, NULL)) {
+				// Add extension to document number.
+				strncpy(dn, without, 45);
+				return 1;
+			}
 		}
 	}
-	return mrz_check(digit, s, NULL);
+	return mrz_check(digit, dn, NULL);
 }
 
 static void mrz_rtrim(char *s, const char *chars) {
@@ -265,15 +268,6 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Validate check sums.
-	success &= mrz_check_extended(document_number_check_digit,
-			mrz->document_number, optional_data1);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
 	success &= mrz_check(check_digit,
 			mrz->document_number,
 			document_number_check_digit,
@@ -285,6 +279,15 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 			optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_check_extended(document_number_check_digit,
+			mrz->document_number, optional_data1);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_check(date_of_birth_check_digit,
+			mrz->date_of_birth, NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
+	success &= mrz_check(date_of_expiry_check_digit,
+			mrz->date_of_expiry, NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
@@ -362,15 +365,6 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check_extended(document_number_check_digit,
-			mrz->document_number, optional_data2);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
 	success &= mrz_check(check_digit,
 			mrz->document_number,
 			document_number_check_digit,
@@ -381,6 +375,15 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_check_extended(document_number_check_digit,
+			mrz->document_number, optional_data2);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_check(date_of_birth_check_digit,
+			mrz->date_of_birth, NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
+	success &= mrz_check(date_of_expiry_check_digit,
+			mrz->date_of_expiry, NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
@@ -463,6 +466,17 @@ static int mrz_parse_td3(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
+	success &= mrz_check(check_digit,
+			mrz->document_number,
+			document_number_check_digit,
+			mrz->date_of_birth,
+			date_of_birth_check_digit,
+			mrz->date_of_expiry,
+			date_of_expiry_check_digit,
+			personal_number,
+			personal_number_check_digit,
+			NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
 	success &= mrz_check(document_number_check_digit,
 			mrz->document_number, NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
@@ -475,17 +489,6 @@ static int mrz_parse_td3(MRZ *mrz, const char *s) {
 	success &= mrz_check(personal_number_check_digit,
 			personal_number, NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_PERSONAL_NUMBER);
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			personal_number,
-			personal_number_check_digit,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
 
 	return success;
 }
@@ -732,16 +735,6 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(document_number_check_digit,
-			year_of_issuance,
-			month_of_issuance,
-			department_of_issuance2,
-			mrz->document_number,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
 	success &= mrz_check(check_digit,
 			mrz->document_code,
 			mrz->nationality,
@@ -759,6 +752,16 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 			mrz->sex,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_check(document_number_check_digit,
+			year_of_issuance,
+			month_of_issuance,
+			department_of_issuance2,
+			mrz->document_number,
+			NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_check(date_of_birth_check_digit,
+			mrz->date_of_birth, NULL);
+	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
 
 	// Calculate expiry date.
 	int year = atoi(year_of_issuance);
