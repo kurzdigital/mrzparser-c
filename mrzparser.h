@@ -102,7 +102,11 @@ static int mrz_check(const char *digit, ...) {
 	return sum == (*digit == '<' ? 0 : *digit - 48);
 }
 
-static int mrz_check_extended(const char *digit, char *dn, const char *ext) {
+static int mrz_check_and_expand_extended_document_number(
+		const char *digit,
+		char *dn,
+		size_t dn_cap,
+		const char *ext) {
 	if (*digit == '<') {
 		const char *p = strchr(ext, '<');
 		size_t len = p - ext;
@@ -130,7 +134,7 @@ static int mrz_check_extended(const char *digit, char *dn, const char *ext) {
 			if (mrz_check(d, with, NULL) ||
 					mrz_check(d, without, NULL)) {
 				// Add extension to document number.
-				strncpy(dn, without, 45);
+				strncpy(dn, without, dn_cap);
 				return 1;
 			}
 		}
@@ -279,8 +283,11 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 			optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_extended(document_number_check_digit,
-			mrz->document_number, optional_data1);
+	success &= mrz_check_and_expand_extended_document_number(
+			document_number_check_digit,
+			mrz->document_number,
+			MRZ_CAPACITY(mrz->document_number),
+			optional_data1);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
 	success &= mrz_check(date_of_birth_check_digit,
 			mrz->date_of_birth, NULL);
@@ -375,8 +382,11 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_extended(document_number_check_digit,
-			mrz->document_number, optional_data2);
+	success &= mrz_check_and_expand_extended_document_number(
+			document_number_check_digit,
+			mrz->document_number,
+			MRZ_CAPACITY(mrz->document_number),
+			optional_data2);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
 	success &= mrz_check(date_of_birth_check_digit,
 			mrz->date_of_birth, NULL);
