@@ -145,9 +145,21 @@ static int mrz_check_and_expand_extended_document_number(
 }
 
 static void mrz_trim_fillers(char *s) {
-	char *r = s + strlen(s);
-	for (; r > s && *(r - 1) == *MRZ_FILLER; --r);
-	*r = 0;
+	// Trim start.
+	size_t skip = strspn(s, MRZ_FILLER);
+	if (skip > 0) {
+		char *dst = s;
+		for (char *src = s + skip; *src; ) {
+			*dst++ = *src++;
+		}
+		*dst = 0;
+	}
+	// Trim end.
+	{
+		char *r = s + strlen(s);
+		for (; r > s && *(r - 1) == *MRZ_FILLER; --r);
+		*r = 0;
+	}
 }
 
 static void mrz_replace_fillers(char *s) {
