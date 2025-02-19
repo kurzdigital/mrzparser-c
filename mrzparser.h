@@ -13,6 +13,8 @@ struct MRZ {
 	char date_of_expiry[7];
 	char optional_data1[16];
 	char optional_data2[17];
+	char blank_number[7];
+	char language[4];
 	const char *error;
 };
 typedef struct MRZ MRZ;
@@ -30,7 +32,6 @@ int parse_mrz(struct MRZ *, const char *);
 #define MRZ_FILLER "<"
 #define MRZ_SEXES "MFX" MRZ_FILLER
 #define MRZ_ALL MRZ_CHARACTERS MRZ_NUMBERS MRZ_FILLER
-#define MRZ_CHARACTERS_AND_NUMBERS MRZ_CHARACTERS MRZ_CHARACTERS
 #define MRZ_CHARACTERS_AND_FILLER MRZ_CHARACTERS MRZ_FILLER
 #define MRZ_NUMBERS_AND_FILLER MRZ_NUMBERS MRZ_FILLER
 #define MRZ_CAPACITY(s) (sizeof(s) - 1)
@@ -65,9 +66,10 @@ int parse_mrz(struct MRZ *, const char *);
 #define MRZ_CSUM_DOE "checksum for date of expiry"
 #define MRZ_CSUM_PERSONAL_NUMBER "checksum for personal number"
 #define MRZ_CSUM_COMBINED "combined checksum"
-#define MRZ_SWISS_LANGUAGE "invalid language code"
-#define MRZ_SWISS_VERSION "invalid version"
-#define MRZ_SWISS_FILLER "invalid filler characters"
+#define MRZ_SWISS_BLANK_NUMBER "blank number"
+#define MRZ_SWISS_LANGUAGE "language code"
+#define MRZ_SWISS_VERSION "version"
+#define MRZ_SWISS_FILLER "filler characters"
 #define MRZ_ASSERT_CSUM(x, m, e) if (!x && !m->error) { m->error = e; }
 
 static int mrz_check_digit_weights[] = {7, 3, 1};
@@ -810,31 +812,19 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	int success = 1;
 
 	// First line, which is much shorter and contains just meta data.
-	char fillers[7];
 	if (!ignore_first_line) {
-		char raw_card_number_alnum[4];
 		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(raw_card_number_alnum), raw_card_number_alnum,
-				3, MRZ_CHARACTERS_AND_NUMBERS,
-				MRZ_DOCUMENT_CODE, e);
-		char raw_card_number_num[4];
+				MRZ_CAPACITY(mrz->blank_number), mrz->blank_number,
+				6, MRZ_ALL,
+				MRZ_SWISS_BLANK_NUMBER, e);
 		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(raw_card_number_num), raw_card_number_num,
-				3, MRZ_NUMBERS,
-				MRZ_DOCUMENT_CODE, e);
-		char lang[2];
-		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(lang), lang,
-				1, MRZ_CHARACTERS,
-				MRZ_DOCUMENT_CODE, e);
-		if (!strchr("DFIR", *lang)) {
+				MRZ_CAPACITY(mrz->language), mrz->language,
+				3, MRZ_CHARACTERS_AND_FILLER,
+				MRZ_SWISS_LANGUAGE, e);
+		if (!strchr("DFIR", *mrz->language)) {
 			*e = MRZ_SWISS_LANGUAGE;
 			success = 0;
 		}
-		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(fillers), fillers,
-				2, MRZ_FILLER,
-				MRZ_DOCUMENT_CODE, e);
 	}
 
 	// Second line.
@@ -875,6 +865,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			dnlen, MRZ_ALL,
 			MRZ_DOCUMENT_NUMBER, e);
+	char fillers[7];
 	char version[4];
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(version), version,
@@ -968,6 +959,8 @@ int parse_mrz(MRZ *mrz, const char *s) {
 	mrz_trim_fillers(mrz->date_of_expiry);
 	mrz_trim_fillers(mrz->optional_data1);
 	mrz_trim_fillers(mrz->optional_data2);
+	mrz_trim_fillers(mrz->blank_number);
+	mrz_trim_fillers(mrz->language);
 	// Replace fillers with white space.
 	mrz_replace_fillers(mrz->document_code);
 	mrz_replace_fillers(mrz->issuing_state);
