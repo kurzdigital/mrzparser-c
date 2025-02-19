@@ -11,6 +11,8 @@ struct MRZ {
 	char date_of_birth[7];
 	char sex[2];
 	char date_of_expiry[7];
+	char optional_data1[16];
+	char optional_data2[17];
 	const char *error;
 };
 typedef struct MRZ MRZ;
@@ -219,9 +221,8 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
 			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
-	char optional_data1[16] = {0};
 	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(optional_data1), optional_data1,
+			MRZ_CAPACITY(mrz->optional_data1), mrz->optional_data1,
 			15, MRZ_ALL,
 			MRZ_OPTIONAL_DATA1, e);
 
@@ -252,9 +253,8 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
 			MRZ_NATIONALITY, e);
-	char optional_data2[12] = {0};
 	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(optional_data2), optional_data2,
+			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			11, MRZ_ALL,
 			MRZ_OPTIONAL_DATA2, e);
 	char check_digit[2] = {0};
@@ -275,19 +275,19 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 	success &= mrz_check(check_digit,
 			mrz->document_number,
 			document_number_check_digit,
-			optional_data1,
+			mrz->optional_data1,
 			mrz->date_of_birth,
 			date_of_birth_check_digit,
 			mrz->date_of_expiry,
 			date_of_expiry_check_digit,
-			optional_data2,
+			mrz->optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
 	success &= mrz_check_and_expand_extended_document_number(
 			document_number_check_digit,
 			mrz->document_number,
 			MRZ_CAPACITY(mrz->document_number),
-			optional_data1);
+			mrz->optional_data1);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
 	success &= mrz_check(date_of_birth_check_digit,
 			mrz->date_of_birth, NULL);
@@ -360,9 +360,8 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
 			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
-	char optional_data2[8] = {0};
 	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(optional_data2), optional_data2,
+			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			7, MRZ_ALL,
 			MRZ_OPTIONAL_DATA2, e);
 	char check_digit[2] = {0};
@@ -379,14 +378,14 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			date_of_birth_check_digit,
 			mrz->date_of_expiry,
 			date_of_expiry_check_digit,
-			optional_data2,
+			mrz->optional_data2,
 			NULL);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
 	success &= mrz_check_and_expand_extended_document_number(
 			document_number_check_digit,
 			mrz->document_number,
 			MRZ_CAPACITY(mrz->document_number),
-			optional_data2);
+			mrz->optional_data2);
 	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
 	success &= mrz_check(date_of_birth_check_digit,
 			mrz->date_of_birth, NULL);
@@ -564,9 +563,8 @@ static int mrz_parse_mrva(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
 			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
-	char optional_data2[17] = {0};
 	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(optional_data2), optional_data2,
+			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			16, MRZ_ALL,
 			MRZ_OPTIONAL_DATA2, e);
 
@@ -645,9 +643,8 @@ static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
 			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
-	char optional_data2[9] = {0};
 	success &= mrz_parse_component(&s,
-			MRZ_CAPACITY(optional_data2), optional_data2,
+			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			8, MRZ_ALL,
 			MRZ_OPTIONAL_DATA2, e);
 
@@ -957,6 +954,8 @@ int parse_mrz(MRZ *mrz, const char *s) {
 	mrz_trim_fillers(mrz->document_number);
 	mrz_trim_fillers(mrz->date_of_birth);
 	mrz_trim_fillers(mrz->date_of_expiry);
+	mrz_trim_fillers(mrz->optional_data1);
+	mrz_trim_fillers(mrz->optional_data2);
 	// Replace fillers with white space.
 	mrz_replace_fillers(mrz->document_code);
 	mrz_replace_fillers(mrz->issuing_state);
