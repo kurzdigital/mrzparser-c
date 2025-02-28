@@ -849,6 +849,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		return 0;
 	}
 	int dnlen = p - s;
+	int vlen = 3;
 	int remaining;
 	if (dnlen == 12) {
 		dnlen = 9;
@@ -856,6 +857,10 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	} else if (dnlen == 15) {
 		dnlen = 12;
 		remaining = 2;
+	} else if (dnlen == 16) {
+		dnlen = 12;
+		remaining = 2;
+		vlen = 4;
 	} else {
 		*e = MRZ_DOCUMENT_NUMBER;
 		return 0;
@@ -866,10 +871,10 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 			dnlen, MRZ_ALL,
 			MRZ_DOCUMENT_NUMBER, e);
 	char fillers[7];
-	char version[4];
+	char version[5];
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(version), version,
-			3, MRZ_NUMBERS,
+			vlen, MRZ_NUMBERS,
 			MRZ_SWISS_VERSION, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(fillers), fillers,
@@ -885,10 +890,11 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 			MRZ_SWISS_FILLER, e);
 
 	// Third line.
-	char identifiers[31] = {0};
+	int len = dnlen + vlen + 2 + 6 + remaining;
+	char identifiers[32] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
-			30, MRZ_CHARACTERS_AND_FILLER,
+			len, MRZ_CHARACTERS_AND_FILLER,
 			MRZ_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
@@ -933,6 +939,7 @@ int parse_mrz(MRZ *mrz, const char *s) {
 			result = mrz_parse_dl_swiss(mrz, pure, 1);
 			break;
 		case 69:
+		case 71:
 			result = mrz_parse_dl_swiss(mrz, pure, 0);
 			break;
 		case 72:
