@@ -8,7 +8,11 @@ int main(void) {
 	char line[1024];
 	while (fgets(line, sizeof(line), stdin)) {
 		if (!parse_mrz(&mrz, line)) {
-			fprintf(stderr, "FAILED:\n%s\nERROR: %s\n", line, mrz.error);
+			fprintf(stderr, "FAILED:\n%s\n", line);
+			fprintf(stderr, "ERRORS:\n");
+			for (const char **e = mrz.errors; *e; ++e) {
+				fprintf(stderr, "* %s\n", *e);
+			}
 			return -1;
 		}
 	}

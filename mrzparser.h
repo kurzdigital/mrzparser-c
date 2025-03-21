@@ -1,6 +1,9 @@
 #ifndef __mrzparser_h_
 #define __mrzparser_h_
 
+#define MRZ_MAX_ERRORS 16
+typedef const char *MRZ_errors[MRZ_MAX_ERRORS];
+
 struct MRZ {
 	char document_code[3];
 	char issuing_state[4];
@@ -15,7 +18,7 @@ struct MRZ {
 	char optional_data2[17];
 	char blank_number[7];
 	char language[4];
-	const char *error;
+	MRZ_errors errors;
 };
 typedef struct MRZ MRZ;
 
@@ -70,7 +73,22 @@ int parse_mrz(struct MRZ *, const char *);
 #define MRZ_SWISS_LANGUAGE "language code"
 #define MRZ_SWISS_VERSION "version"
 #define MRZ_SWISS_FILLER "filler characters"
-#define MRZ_ASSERT_CSUM(x, m, e) if (!x && !m->error) { m->error = e; }
+
+static void mrz_add_error(MRZ_errors *errors, const char *message) {
+	for (const char **e = *errors, **end = e + MRZ_MAX_ERRORS; e < end; ++e) {
+		if (!*e) {
+			*e = message;
+			break;
+		}
+	}
+}
+
+static int mrz_assert_checksum(int result, MRZ *mrz, const char *message) {
+	if (!result) {
+		mrz_add_error(&mrz->errors, message);
+	}
+	return result;
+}
 
 static int mrz_check_digit_weights[] = {7, 3, 1};
 static int mrz_check(const char *digit, ...) {
@@ -189,15 +207,13 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 
 static int mrz_parse_component(const char **src, size_t size, char *field,
 		size_t len, const char *allowed,
-		const char *description, const char **error) {
+		const char *description, MRZ_errors *errors) {
 	if (!**src || size < len) {
 		return 0;
 	}
 	int invalid = strspn(*src, allowed) < len;
 	if (invalid) {
-		if (!*error) {
-			*error = description;
-		}
+		mrz_add_error(errors, description);
 		// Check premature end of input.
 		if (strlen(*src) < len) {
 			// Move to the end of the string to make sure all
@@ -213,8 +229,7 @@ static int mrz_parse_component(const char **src, size_t size, char *field,
 }
 
 static int mrz_parse_td1(MRZ *mrz, const char *s) {
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	MRZ_errors *e = &mrz->errors;
 	int success = 1;
 
 	// First line.
@@ -286,40 +301,41 @@ static int mrz_parse_td1(MRZ *mrz, const char *s) {
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->optional_data1,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			mrz->optional_data2,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_and_expand_extended_document_number(
-			document_number_check_digit,
-			mrz->document_number,
-			MRZ_CAPACITY(mrz->document_number),
-			mrz->optional_data1);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->optional_data1,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->date_of_expiry,
+					date_of_expiry_check_digit,
+					mrz->optional_data2,
+					NULL),
+			mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check_and_expand_extended_document_number(
+					document_number_check_digit,
+					mrz->document_number,
+					MRZ_CAPACITY(mrz->document_number),
+					mrz->optional_data1),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_td2(MRZ *mrz, const char *s) {
+	MRZ_errors *e = &mrz->errors;
 	if (*s == 'V') {
-		mrz->error = MRZ_VISA;
+		mrz_add_error(e, MRZ_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
@@ -385,39 +401,40 @@ static int mrz_parse_td2(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			mrz->optional_data2,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_and_expand_extended_document_number(
-			document_number_check_digit,
-			mrz->document_number,
-			MRZ_CAPACITY(mrz->document_number),
-			mrz->optional_data2);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->date_of_expiry,
+					date_of_expiry_check_digit,
+					mrz->optional_data2,
+					NULL),
+			mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check_and_expand_extended_document_number(
+					document_number_check_digit,
+					mrz->document_number,
+					MRZ_CAPACITY(mrz->document_number),
+					mrz->optional_data2),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_td3(MRZ *mrz, const char *s) {
+	MRZ_errors *e = &mrz->errors;
 	if (*s == 'V') {
-		mrz->error = MRZ_VISA;
+		mrz_add_error(e, MRZ_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
@@ -489,40 +506,40 @@ static int mrz_parse_td3(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			personal_number,
-			personal_number_check_digit,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
-	success &= mrz_check(personal_number_check_digit,
-			personal_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_PERSONAL_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+				mrz->document_number,
+				document_number_check_digit,
+				mrz->date_of_birth,
+				date_of_birth_check_digit,
+				mrz->date_of_expiry,
+				date_of_expiry_check_digit,
+				personal_number,
+				personal_number_check_digit,
+				NULL),
+			mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(personal_number_check_digit, personal_number, NULL),
+			mrz, MRZ_CSUM_PERSONAL_NUMBER);
 
 	return success;
 }
 
 static int mrz_parse_mrva(MRZ *mrz, const char *s) {
+	MRZ_errors *e = &mrz->errors;
 	if (*s != 'V') {
-		mrz->error = MRZ_NO_VISA;
+		mrz_add_error(e, MRZ_NO_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
@@ -583,26 +600,25 @@ static int mrz_parse_mrva(MRZ *mrz, const char *s) {
 			MRZ_OPTIONAL_DATA2, e);
 
 	// Validate check sums.
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
+	MRZ_errors *e = &mrz->errors;
 	if (*s != 'V') {
-		mrz->error = MRZ_NO_VISA;
+		mrz_add_error(e, MRZ_NO_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
@@ -663,15 +679,15 @@ static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
 			MRZ_OPTIONAL_DATA2, e);
 
 	// Validate check sums.
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_CSUM_DOE);
 
 	return success;
 }
@@ -679,8 +695,7 @@ static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
 static int mrz_parse_france(MRZ *mrz, const char *s) {
 	// France got its very own MRZ on ID cards:
 	// https://en.wikipedia.org/wiki/National_identity_card_(France)
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	MRZ_errors *e = &mrz->errors;
 	int success = 1;
 
 	// First line.
@@ -756,33 +771,35 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 			MRZ_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_code,
-			mrz->nationality,
-			mrz->primary_identifier,
-			department_of_issuance1,
-			office_of_issuance,
-			year_of_issuance,
-			month_of_issuance,
-			department_of_issuance2,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->secondary_identifier,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->sex,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check(document_number_check_digit,
-			year_of_issuance,
-			month_of_issuance,
-			department_of_issuance2,
-			mrz->document_number,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_code,
+					mrz->nationality,
+					mrz->primary_identifier,
+					department_of_issuance1,
+					office_of_issuance,
+					year_of_issuance,
+					month_of_issuance,
+					department_of_issuance2,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->secondary_identifier,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->sex,
+					NULL),
+			mrz, MRZ_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit,
+					year_of_issuance,
+					month_of_issuance,
+					department_of_issuance2,
+					mrz->document_number,
+					NULL),
+			mrz, MRZ_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_CSUM_DOB);
 
 	// Calculate expiry date.
 	int year = atoi(year_of_issuance);
@@ -807,8 +824,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		int ignore_first_line) {
 	// Switzerland has something like an MRZ on its driver licenses:
 	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	MRZ_errors *e = &mrz->errors;
 	int success = 1;
 
 	// First line, which is much shorter and contains just meta data.
@@ -822,7 +838,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 				3, MRZ_CHARACTERS_AND_FILLER,
 				MRZ_SWISS_LANGUAGE, e);
 		if (!strchr("DFIR", *mrz->language)) {
-			*e = MRZ_SWISS_LANGUAGE;
+			mrz_add_error(e, MRZ_SWISS_LANGUAGE);
 			success = 0;
 		}
 	}
@@ -837,7 +853,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 			3, "CHE",
 			MRZ_ISSUING_STATE, e);
 	if (strncmp("CHE", mrz->issuing_state, 3)) {
-		*e = MRZ_ISSUING_STATE;
+		mrz_add_error(e, MRZ_ISSUING_STATE);
 		success = 0;
 	}
 
@@ -845,7 +861,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	// (at least) two versions with a different length.
 	const char *p = strstr(s, MRZ_FILLER_SEPARATOR);
 	if (!p) {
-		*e = MRZ_DOCUMENT_NUMBER;
+		mrz_add_error(e, MRZ_DOCUMENT_NUMBER);
 		return 0;
 	}
 	int dnlen = p - s;
@@ -862,7 +878,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		remaining = 2;
 		vlen = 4;
 	} else {
-		*e = MRZ_DOCUMENT_NUMBER;
+		mrz_add_error(e, MRZ_DOCUMENT_NUMBER);
 		return 0;
 	}
 
