@@ -1,6 +1,40 @@
 #ifndef __mrzparser_h_
 #define __mrzparser_h_
 
+#define MRZ_ERROR_DOCUMENT_CODE 1
+#define MRZ_ERROR_ISSUING_STATE 2
+#define MRZ_ERROR_DOCUMENT_NUMBER 3
+#define MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT 4
+#define MRZ_ERROR_OPTIONAL_DATA1 5
+#define MRZ_ERROR_DATE_OF_BIRTH 6
+#define MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT 7
+#define MRZ_ERROR_SEX 8
+#define MRZ_ERROR_DATE_OF_EXPIRY 9
+#define MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT 10
+#define MRZ_ERROR_NATIONALITY 11
+#define MRZ_ERROR_OPTIONAL_DATA2 12
+#define MRZ_ERROR_PERSONAL_NUMBER 13
+#define MRZ_ERROR_PERSONAL_NUMBER_CHECK_DIGIT 14
+#define MRZ_ERROR_COMBINED_CHECK_DIGIT 15
+#define MRZ_ERROR_VISA 16
+#define MRZ_ERROR_NO_VISA 17
+#define MRZ_ERROR_NOT_FRANCE 18
+#define MRZ_ERROR_DEPARTMENT_OF_ISSUANCE 19
+#define MRZ_ERROR_OFFICE_OF_ISSUANCE 20
+#define MRZ_ERROR_YEAR_OF_ISSUANCE 21
+#define MRZ_ERROR_MONTH_OF_ISSUANCE 22
+#define MRZ_ERROR_IDENTIFIERS 23
+#define MRZ_ERROR_CSUM_DOCUMENT_NUMBER 24
+#define MRZ_ERROR_CSUM_DOB 25
+#define MRZ_ERROR_CSUM_DOE 26
+#define MRZ_ERROR_CSUM_PERSONAL_NUMBER 27
+#define MRZ_ERROR_CSUM_COMBINED 28
+#define MRZ_ERROR_SWISS_BLANK_NUMBER 29
+#define MRZ_ERROR_SWISS_LANGUAGE 30
+#define MRZ_ERROR_SWISS_VERSION 31
+#define MRZ_ERROR_SWISS_FILLER 32
+#define MRZ_MAX_ERRORS MRZ_ERROR_SWISS_FILLER
+
 struct MRZ {
 	char document_code[3];
 	char issuing_state[4];
@@ -15,11 +49,49 @@ struct MRZ {
 	char optional_data2[17];
 	char blank_number[7];
 	char language[4];
-	const char *error;
+	int errors[MRZ_MAX_ERRORS];
 };
 typedef struct MRZ MRZ;
 
 int parse_mrz(struct MRZ *, const char *);
+
+const char *mrz_error_string(int code) {
+	switch (code) {
+	default: return "unknown";
+	case MRZ_ERROR_DOCUMENT_CODE: return "document code";
+	case MRZ_ERROR_ISSUING_STATE: return "issuing state";
+	case MRZ_ERROR_DOCUMENT_NUMBER: return "document number";
+	case MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT: return "document number check digit";
+	case MRZ_ERROR_OPTIONAL_DATA1: return "optional data1";
+	case MRZ_ERROR_DATE_OF_BIRTH: return "date of birth";
+	case MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT: return "date of birth check digit";
+	case MRZ_ERROR_SEX: return "sex";
+	case MRZ_ERROR_DATE_OF_EXPIRY: return "date of expiry";
+	case MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT: return "date of expiry check digit";
+	case MRZ_ERROR_NATIONALITY: return "nationality";
+	case MRZ_ERROR_OPTIONAL_DATA2: return "optional data2";
+	case MRZ_ERROR_PERSONAL_NUMBER: return "personal number";
+	case MRZ_ERROR_PERSONAL_NUMBER_CHECK_DIGIT: return "personal number check digit";
+	case MRZ_ERROR_COMBINED_CHECK_DIGIT: return "combined check digit";
+	case MRZ_ERROR_VISA: return "visa";
+	case MRZ_ERROR_NO_VISA: return "no visa";
+	case MRZ_ERROR_NOT_FRANCE: return "not france";
+	case MRZ_ERROR_DEPARTMENT_OF_ISSUANCE: return "department of issuance";
+	case MRZ_ERROR_OFFICE_OF_ISSUANCE: return "office of issuance";
+	case MRZ_ERROR_YEAR_OF_ISSUANCE: return "year of issuance";
+	case MRZ_ERROR_MONTH_OF_ISSUANCE: return "month of issuance";
+	case MRZ_ERROR_IDENTIFIERS: return "names";
+	case MRZ_ERROR_CSUM_DOCUMENT_NUMBER: return "checksum for document number";
+	case MRZ_ERROR_CSUM_DOB: return "checksum for date of birth";
+	case MRZ_ERROR_CSUM_DOE: return "checksum for date of expiry";
+	case MRZ_ERROR_CSUM_PERSONAL_NUMBER: return "checksum for personal number";
+	case MRZ_ERROR_CSUM_COMBINED: return "combined checksum";
+	case MRZ_ERROR_SWISS_BLANK_NUMBER: return "blank number";
+	case MRZ_ERROR_SWISS_LANGUAGE: return "language code";
+	case MRZ_ERROR_SWISS_VERSION: return "version";
+	case MRZ_ERROR_SWISS_FILLER: return "filler characters";
+	}
+}
 
 #ifdef MRZ_PARSER_IMPLEMENTATION
 #include <stdarg.h>
@@ -38,39 +110,22 @@ int parse_mrz(struct MRZ *, const char *);
 #define MRZ_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define MRZ_FILLER_SEPARATOR "<<"
 #define MRZ_WHITE_SPACE " "
-#define MRZ_DOCUMENT_CODE "document code"
-#define MRZ_ISSUING_STATE "issuing state"
-#define MRZ_DOCUMENT_NUMBER "document number"
-#define MRZ_DOCUMENT_NUMBER_CHECK_DIGIT "document number check digit"
-#define MRZ_OPTIONAL_DATA1 "optional data1"
-#define MRZ_DATE_OF_BIRTH "date of birth"
-#define MRZ_DATE_OF_BIRTH_CHECK_DIGIT "date of birth check digit"
-#define MRZ_SEX "sex"
-#define MRZ_DATE_OF_EXPIRY "date of expiry"
-#define MRZ_DATE_OF_EXPIRY_CHECK_DIGIT "date of expiry check digit"
-#define MRZ_NATIONALITY "nationality"
-#define MRZ_OPTIONAL_DATA2 "optional data2"
-#define MRZ_PERSONAL_NUMBER "personal number"
-#define MRZ_PERSONAL_NUMBER_CHECK_DIGIT "personal number check digit"
-#define MRZ_COMBINED_CHECK_DIGIT "combined check digit"
-#define MRZ_VISA "visa"
-#define MRZ_NO_VISA "no visa"
-#define MRZ_NOT_FRANCE "not france"
-#define MRZ_DEPARTMENT_OF_ISSUANCE "department of issuance"
-#define MRZ_OFFICE_OF_ISSUANCE "office of issuance"
-#define MRZ_YEAR_OF_ISSUANCE "year of issuance"
-#define MRZ_MONTH_OF_ISSUANCE "month of issuance"
-#define MRZ_IDENTIFIERS "names"
-#define MRZ_CSUM_DOCUMENT_NUMBER "checksum for document number"
-#define MRZ_CSUM_DOB "checksum for date of birth"
-#define MRZ_CSUM_DOE "checksum for date of expiry"
-#define MRZ_CSUM_PERSONAL_NUMBER "checksum for personal number"
-#define MRZ_CSUM_COMBINED "combined checksum"
-#define MRZ_SWISS_BLANK_NUMBER "blank number"
-#define MRZ_SWISS_LANGUAGE "language code"
-#define MRZ_SWISS_VERSION "version"
-#define MRZ_SWISS_FILLER "filler characters"
-#define MRZ_ASSERT_CSUM(x, m, e) if (!x && !m->error) { m->error = e; }
+
+static void mrz_add_error(int *error, int code) {
+	for (int *end = error + MRZ_MAX_ERRORS; error < end; ++error) {
+		if (!*error) {
+			*error = code;
+			break;
+		}
+	}
+}
+
+static int mrz_assert_checksum(int result, MRZ *mrz, int code) {
+	if (!result) {
+		mrz_add_error(mrz->errors, code);
+	}
+	return result;
+}
 
 static int mrz_check_digit_weights[] = {7, 3, 1};
 static int mrz_check(const char *digit, ...) {
@@ -189,15 +244,13 @@ static void mrz_parse_identifiers(MRZ *mrz, const char *identifiers) {
 
 static int mrz_parse_component(const char **src, size_t size, char *field,
 		size_t len, const char *allowed,
-		const char *description, const char **error) {
+		int error_code, int *errors) {
 	if (!**src || size < len) {
 		return 0;
 	}
 	int invalid = strspn(*src, allowed) < len;
 	if (invalid) {
-		if (!*error) {
-			*error = description;
-		}
+		mrz_add_error(errors, error_code);
 		// Check premature end of input.
 		if (strlen(*src) < len) {
 			// Move to the end of the string to make sure all
@@ -213,465 +266,465 @@ static int mrz_parse_component(const char **src, size_t size, char *field,
 }
 
 static int mrz_parse_td1(MRZ *mrz, const char *s) {
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	int *e = mrz->errors;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->optional_data1), mrz->optional_data1,
 			15, MRZ_ALL,
-			MRZ_OPTIONAL_DATA1, e);
+			MRZ_ERROR_OPTIONAL_DATA1, e);
 
 	// Second line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_expiry), mrz->date_of_expiry,
 			6, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY, e);
+			MRZ_ERROR_DATE_OF_EXPIRY, e);
 	char date_of_expiry_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			11, MRZ_ALL,
-			MRZ_OPTIONAL_DATA2, e);
+			MRZ_ERROR_OPTIONAL_DATA2, e);
 	char check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(check_digit), check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_COMBINED_CHECK_DIGIT, e);
+			MRZ_ERROR_COMBINED_CHECK_DIGIT, e);
 
 	// Third line.
 	char identifiers[31] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			30, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->optional_data1,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			mrz->optional_data2,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_and_expand_extended_document_number(
-			document_number_check_digit,
-			mrz->document_number,
-			MRZ_CAPACITY(mrz->document_number),
-			mrz->optional_data1);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->optional_data1,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->date_of_expiry,
+					date_of_expiry_check_digit,
+					mrz->optional_data2,
+					NULL),
+			mrz, MRZ_ERROR_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check_and_expand_extended_document_number(
+					document_number_check_digit,
+					mrz->document_number,
+					MRZ_CAPACITY(mrz->document_number),
+					mrz->optional_data1),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_ERROR_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_td2(MRZ *mrz, const char *s) {
+	int *e = mrz->errors;
 	if (*s == 'V') {
-		mrz->error = MRZ_VISA;
+		mrz_add_error(e, MRZ_ERROR_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	char identifiers[32] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			31, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Second line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_expiry), mrz->date_of_expiry,
 			6, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY, e);
+			MRZ_ERROR_DATE_OF_EXPIRY, e);
 	char date_of_expiry_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			7, MRZ_ALL,
-			MRZ_OPTIONAL_DATA2, e);
+			MRZ_ERROR_OPTIONAL_DATA2, e);
 	char check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(check_digit), check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_COMBINED_CHECK_DIGIT, e);
+			MRZ_ERROR_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			mrz->optional_data2,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check_and_expand_extended_document_number(
-			document_number_check_digit,
-			mrz->document_number,
-			MRZ_CAPACITY(mrz->document_number),
-			mrz->optional_data2);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->date_of_expiry,
+					date_of_expiry_check_digit,
+					mrz->optional_data2,
+					NULL),
+			mrz, MRZ_ERROR_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check_and_expand_extended_document_number(
+					document_number_check_digit,
+					mrz->document_number,
+					MRZ_CAPACITY(mrz->document_number),
+					mrz->optional_data2),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_ERROR_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_td3(MRZ *mrz, const char *s) {
+	int *e = mrz->errors;
 	if (*s == 'V') {
-		mrz->error = MRZ_VISA;
+		mrz_add_error(e, MRZ_ERROR_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	char identifiers[40] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			39, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Second line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_expiry), mrz->date_of_expiry,
 			6, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY, e);
+			MRZ_ERROR_DATE_OF_EXPIRY, e);
 	char date_of_expiry_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT, e);
 	char personal_number[15] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(personal_number), personal_number,
 			14, MRZ_ALL,
-			MRZ_PERSONAL_NUMBER, e);
+			MRZ_ERROR_PERSONAL_NUMBER, e);
 	char personal_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(personal_number_check_digit), personal_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_PERSONAL_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_PERSONAL_NUMBER_CHECK_DIGIT, e);
 	char check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(check_digit), check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_COMBINED_CHECK_DIGIT, e);
+			MRZ_ERROR_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->date_of_expiry,
-			date_of_expiry_check_digit,
-			personal_number,
-			personal_number_check_digit,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
-	success &= mrz_check(personal_number_check_digit,
-			personal_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_PERSONAL_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+				mrz->document_number,
+				document_number_check_digit,
+				mrz->date_of_birth,
+				date_of_birth_check_digit,
+				mrz->date_of_expiry,
+				date_of_expiry_check_digit,
+				personal_number,
+				personal_number_check_digit,
+				NULL),
+			mrz, MRZ_ERROR_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_ERROR_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(personal_number_check_digit, personal_number, NULL),
+			mrz, MRZ_ERROR_CSUM_PERSONAL_NUMBER);
 
 	return success;
 }
 
 static int mrz_parse_mrva(MRZ *mrz, const char *s) {
+	int *e = mrz->errors;
 	if (*s != 'V') {
-		mrz->error = MRZ_NO_VISA;
+		mrz_add_error(e, MRZ_ERROR_NO_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	char identifiers[40] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			39, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Second line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_expiry), mrz->date_of_expiry,
 			6, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY, e);
+			MRZ_ERROR_DATE_OF_EXPIRY, e);
 	char date_of_expiry_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			16, MRZ_ALL,
-			MRZ_OPTIONAL_DATA2, e);
+			MRZ_ERROR_OPTIONAL_DATA2, e);
 
 	// Validate check sums.
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_ERROR_CSUM_DOE);
 
 	return success;
 }
 
 static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
+	int *e = mrz->errors;
 	if (*s != 'V') {
-		mrz->error = MRZ_NO_VISA;
+		mrz_add_error(e, MRZ_ERROR_NO_VISA);
 		return 0;
 	}
-	mrz->error = NULL;
-	const char **e = &mrz->error;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	char identifiers[32] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			31, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	// Second line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			9, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	char date_of_expiry_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_expiry), mrz->date_of_expiry,
 			6, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY, e);
+			MRZ_ERROR_DATE_OF_EXPIRY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_expiry_check_digit), date_of_expiry_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_EXPIRY_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_EXPIRY_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->optional_data2), mrz->optional_data2,
 			8, MRZ_ALL,
-			MRZ_OPTIONAL_DATA2, e);
+			MRZ_ERROR_OPTIONAL_DATA2, e);
 
 	// Validate check sums.
-	success &= mrz_check(document_number_check_digit,
-			mrz->document_number, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
-	success &= mrz_check(date_of_expiry_check_digit,
-			mrz->date_of_expiry, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOE);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit, mrz->document_number, NULL),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_expiry_check_digit, mrz->date_of_expiry, NULL),
+			mrz, MRZ_ERROR_CSUM_DOE);
 
 	return success;
 }
@@ -679,110 +732,111 @@ static int mrz_parse_mrvb(MRZ *mrz, const char *s) {
 static int mrz_parse_france(MRZ *mrz, const char *s) {
 	// France got its very own MRZ on ID cards:
 	// https://en.wikipedia.org/wiki/National_identity_card_(France)
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	int *e = mrz->errors;
 	int success = 1;
 
 	// First line.
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->nationality), mrz->nationality,
 			3, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_NATIONALITY, e);
+			MRZ_ERROR_NATIONALITY, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->primary_identifier), mrz->primary_identifier,
 			25, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	char department_of_issuance1[4] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(department_of_issuance1), department_of_issuance1,
 			3, MRZ_ALL,
-			MRZ_DEPARTMENT_OF_ISSUANCE, e);
+			MRZ_ERROR_DEPARTMENT_OF_ISSUANCE, e);
 	char office_of_issuance[4] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(office_of_issuance), office_of_issuance,
 			3, MRZ_NUMBERS_AND_FILLER,
-			MRZ_OFFICE_OF_ISSUANCE, e);
+			MRZ_ERROR_OFFICE_OF_ISSUANCE, e);
 
 	// Second line.
 	char year_of_issuance[3] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(year_of_issuance), year_of_issuance,
 			2, MRZ_NUMBERS,
-			MRZ_YEAR_OF_ISSUANCE, e);
+			MRZ_ERROR_YEAR_OF_ISSUANCE, e);
 	char month_of_issuance[3] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(month_of_issuance), month_of_issuance,
 			2, MRZ_NUMBERS,
-			MRZ_MONTH_OF_ISSUANCE, e);
+			MRZ_ERROR_MONTH_OF_ISSUANCE, e);
 	char department_of_issuance2[4] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(department_of_issuance2), department_of_issuance2,
 			3, MRZ_ALL,
-			MRZ_DEPARTMENT_OF_ISSUANCE, e);
+			MRZ_ERROR_DEPARTMENT_OF_ISSUANCE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			5, MRZ_NUMBERS,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char document_number_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(document_number_check_digit), document_number_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DOCUMENT_NUMBER_CHECK_DIGIT, e);
+			MRZ_ERROR_DOCUMENT_NUMBER_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->secondary_identifier), mrz->secondary_identifier,
 			14, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	char date_of_birth_check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(date_of_birth_check_digit), date_of_birth_check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_DATE_OF_BIRTH_CHECK_DIGIT, e);
+			MRZ_ERROR_DATE_OF_BIRTH_CHECK_DIGIT, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->sex), mrz->sex,
 			1, MRZ_SEXES,
-			MRZ_SEX, e);
+			MRZ_ERROR_SEX, e);
 	char check_digit[2] = {0};
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(check_digit), check_digit,
 			1, MRZ_NUMBERS,
-			MRZ_COMBINED_CHECK_DIGIT, e);
+			MRZ_ERROR_COMBINED_CHECK_DIGIT, e);
 
 	// Validate check sums.
-	success &= mrz_check(check_digit,
-			mrz->document_code,
-			mrz->nationality,
-			mrz->primary_identifier,
-			department_of_issuance1,
-			office_of_issuance,
-			year_of_issuance,
-			month_of_issuance,
-			department_of_issuance2,
-			mrz->document_number,
-			document_number_check_digit,
-			mrz->secondary_identifier,
-			mrz->date_of_birth,
-			date_of_birth_check_digit,
-			mrz->sex,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_COMBINED);
-	success &= mrz_check(document_number_check_digit,
-			year_of_issuance,
-			month_of_issuance,
-			department_of_issuance2,
-			mrz->document_number,
-			NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOCUMENT_NUMBER);
-	success &= mrz_check(date_of_birth_check_digit,
-			mrz->date_of_birth, NULL);
-	MRZ_ASSERT_CSUM(success, mrz, MRZ_CSUM_DOB);
+	success &= mrz_assert_checksum(
+			mrz_check(check_digit,
+					mrz->document_code,
+					mrz->nationality,
+					mrz->primary_identifier,
+					department_of_issuance1,
+					office_of_issuance,
+					year_of_issuance,
+					month_of_issuance,
+					department_of_issuance2,
+					mrz->document_number,
+					document_number_check_digit,
+					mrz->secondary_identifier,
+					mrz->date_of_birth,
+					date_of_birth_check_digit,
+					mrz->sex,
+					NULL),
+			mrz, MRZ_ERROR_CSUM_COMBINED);
+	success &= mrz_assert_checksum(
+			mrz_check(document_number_check_digit,
+					year_of_issuance,
+					month_of_issuance,
+					department_of_issuance2,
+					mrz->document_number,
+					NULL),
+			mrz, MRZ_ERROR_CSUM_DOCUMENT_NUMBER);
+	success &= mrz_assert_checksum(
+			mrz_check(date_of_birth_check_digit, mrz->date_of_birth, NULL),
+			mrz, MRZ_ERROR_CSUM_DOB);
 
 	// Calculate expiry date.
 	int year = atoi(year_of_issuance);
@@ -807,8 +861,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		int ignore_first_line) {
 	// Switzerland has something like an MRZ on its driver licenses:
 	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
-	mrz->error = NULL;
-	const char **e = &mrz->error;
+	int *e = mrz->errors;
 	int success = 1;
 
 	// First line, which is much shorter and contains just meta data.
@@ -816,13 +869,13 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		success &= mrz_parse_component(&s,
 				MRZ_CAPACITY(mrz->blank_number), mrz->blank_number,
 				6, MRZ_ALL,
-				MRZ_SWISS_BLANK_NUMBER, e);
+				MRZ_ERROR_SWISS_BLANK_NUMBER, e);
 		success &= mrz_parse_component(&s,
 				MRZ_CAPACITY(mrz->language), mrz->language,
 				3, MRZ_CHARACTERS_AND_FILLER,
-				MRZ_SWISS_LANGUAGE, e);
+				MRZ_ERROR_SWISS_LANGUAGE, e);
 		if (!strchr("DFIR", *mrz->language)) {
-			*e = MRZ_SWISS_LANGUAGE;
+			mrz_add_error(e, MRZ_ERROR_SWISS_LANGUAGE);
 			success = 0;
 		}
 	}
@@ -831,13 +884,13 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_code), mrz->document_code,
 			2, MRZ_ALL,
-			MRZ_DOCUMENT_CODE, e);
+			MRZ_ERROR_DOCUMENT_CODE, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->issuing_state), mrz->issuing_state,
 			3, "CHE",
-			MRZ_ISSUING_STATE, e);
+			MRZ_ERROR_ISSUING_STATE, e);
 	if (strncmp("CHE", mrz->issuing_state, 3)) {
-		*e = MRZ_ISSUING_STATE;
+		mrz_add_error(e, MRZ_ERROR_ISSUING_STATE);
 		success = 0;
 	}
 
@@ -845,7 +898,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	// (at least) two versions with a different length.
 	const char *p = strstr(s, MRZ_FILLER_SEPARATOR);
 	if (!p) {
-		*e = MRZ_DOCUMENT_NUMBER;
+		mrz_add_error(e, MRZ_ERROR_DOCUMENT_NUMBER);
 		return 0;
 	}
 	int dnlen = p - s;
@@ -862,32 +915,32 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 		remaining = 2;
 		vlen = 4;
 	} else {
-		*e = MRZ_DOCUMENT_NUMBER;
+		mrz_add_error(e, MRZ_ERROR_DOCUMENT_NUMBER);
 		return 0;
 	}
 
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->document_number), mrz->document_number,
 			dnlen, MRZ_ALL,
-			MRZ_DOCUMENT_NUMBER, e);
+			MRZ_ERROR_DOCUMENT_NUMBER, e);
 	char fillers[7];
 	char version[5];
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(version), version,
 			vlen, MRZ_NUMBERS,
-			MRZ_SWISS_VERSION, e);
+			MRZ_ERROR_SWISS_VERSION, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(fillers), fillers,
 			2, MRZ_FILLER,
-			MRZ_SWISS_FILLER, e);
+			MRZ_ERROR_SWISS_FILLER, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(mrz->date_of_birth), mrz->date_of_birth,
 			6, MRZ_NUMBERS_AND_FILLER,
-			MRZ_DATE_OF_BIRTH, e);
+			MRZ_ERROR_DATE_OF_BIRTH, e);
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(fillers), fillers,
 			remaining, MRZ_FILLER,
-			MRZ_SWISS_FILLER, e);
+			MRZ_ERROR_SWISS_FILLER, e);
 
 	// Third line.
 	int len = dnlen + vlen + 2 + 6 + remaining;
@@ -895,7 +948,7 @@ static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
 	success &= mrz_parse_component(&s,
 			MRZ_CAPACITY(identifiers), identifiers,
 			len, MRZ_CHARACTERS_AND_FILLER,
-			MRZ_IDENTIFIERS, e);
+			MRZ_ERROR_IDENTIFIERS, e);
 	mrz_parse_identifiers(mrz, identifiers);
 
 	return success;
