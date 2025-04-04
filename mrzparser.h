@@ -857,27 +857,24 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 	return success;
 }
 
-static int mrz_parse_dl_swiss(MRZ *mrz, const char *s,
-		int ignore_first_line) {
+static int mrz_parse_dl_swiss(MRZ *mrz, const char *s) {
 	// Switzerland has something like an MRZ on its driver licenses:
 	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
 	int *e = mrz->errors;
 	int success = 1;
 
 	// First line, which is much shorter and contains just meta data.
-	if (!ignore_first_line) {
-		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(mrz->blank_number), mrz->blank_number,
-				6, MRZ_ALL,
-				MRZ_ERROR_SWISS_BLANK_NUMBER, e);
-		success &= mrz_parse_component(&s,
-				MRZ_CAPACITY(mrz->language), mrz->language,
-				3, MRZ_CHARACTERS_AND_FILLER,
-				MRZ_ERROR_SWISS_LANGUAGE, e);
-		if (!strchr("DFIR", *mrz->language)) {
-			mrz_add_error(e, MRZ_ERROR_SWISS_LANGUAGE);
-			success = 0;
-		}
+	success &= mrz_parse_component(&s,
+			MRZ_CAPACITY(mrz->blank_number), mrz->blank_number,
+			6, MRZ_ALL,
+			MRZ_ERROR_SWISS_BLANK_NUMBER, e);
+	success &= mrz_parse_component(&s,
+			MRZ_CAPACITY(mrz->language), mrz->language,
+			3, MRZ_CHARACTERS_AND_FILLER,
+			MRZ_ERROR_SWISS_LANGUAGE, e);
+	if (!strchr("DFIR", *mrz->language)) {
+		mrz_add_error(e, MRZ_ERROR_SWISS_LANGUAGE);
+		success = 0;
 	}
 
 	// Second line.
@@ -988,12 +985,9 @@ int parse_mrz(MRZ *mrz, const char *s) {
 		case 90:
 			result = mrz_parse_td1(mrz, pure);
 			break;
-		case 60:
-			result = mrz_parse_dl_swiss(mrz, pure, 1);
-			break;
 		case 69:
 		case 71:
-			result = mrz_parse_dl_swiss(mrz, pure, 0);
+			result = mrz_parse_dl_swiss(mrz, pure);
 			break;
 		case 72:
 			result = !strncmp(pure, "IDFRA", 5)
