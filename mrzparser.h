@@ -858,8 +858,8 @@ static int mrz_parse_france(MRZ *mrz, const char *s) {
 }
 
 static int mrz_parse_dl_swiss(MRZ *mrz, const char *s) {
-	// Switzerland has something like an MRZ on its driver licenses:
-	// https://www.sg.ch/content/dam/sgch/verkehr/strassenverkehr/fahreignungsabkl%C3%A4rungen/informationen/Kreisschreiben%20ASTRA%20Schweiz.%20FAK.pdf
+	// Switzerland has something like an MRZ on its driver licenses.
+	// See "doc/swiss_fak.pdf".
 	int *e = mrz->errors;
 	int success = 1;
 
