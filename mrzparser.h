@@ -1,5 +1,5 @@
-#ifndef __mrzparser_h_
-#define __mrzparser_h_
+#ifndef __mrzparser_h__
+#define __mrzparser_h__
 
 #define MRZ_ERROR_DOCUMENT_CODE 1
 #define MRZ_ERROR_ISSUING_STATE 2
